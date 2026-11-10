@@ -70,6 +70,12 @@ if 'toast_message' not in st.session_state:
 if 'delete_proj_target' not in st.session_state:
     st.session_state.delete_proj_target = None
 
+if 'delete_order_target' not in st.session_state:
+    st.session_state.delete_order_target = None
+
+if 'delete_flavor_target' not in st.session_state:
+    st.session_state.delete_flavor_target = None
+
 def persist_state():
     data = {
         "projects": st.session_state.projects,
@@ -122,7 +128,7 @@ if mode == "🛒 前台 POS 點餐結帳":
     col_main, col_cart = st.columns([2, 1])
     
     with col_main:
-        st.subheader("📦 點餐區 (點擊+直接加入訂單)")
+        st.subheader("📦 點餐區 (一排 2 個按鈕，點擊直接加進購物車 +1)")
         
         # 強制每行 2 個按鈕配置
         cols = st.columns(2)
@@ -159,7 +165,7 @@ if mode == "🛒 前台 POS 點餐結帳":
                 st.markdown("<div style='margin-bottom: 12px;'></div>", unsafe_allow_html=True)
 
     with col_cart:
-        st.subheader("🛒 目前訂單")
+        st.subheader("🛒 目前購物車")
         
         if st.session_state.pos_cart:
             total_amount = 0
@@ -287,7 +293,6 @@ elif mode == "📊 後台庫存與營收管理":
     project_flavors = [f for f in st.session_state.flavors if f["project_id"] == current_project_id]
     
     with tab1:
-        # 批量補貨移到上方
         st.subheader("📥 批次補貨登錄")
         with st.form("restock_form"):
             flavor_options = {f["name"]: f["id"] for f in project_flavors}
@@ -359,21 +364,61 @@ elif mode == "📊 後台庫存與營收管理":
             st.info("尚無口味資料。")
             
     with tab3:
-        st.subheader("💰 歷史銷售與營業額")
+        st.subheader("💰 歷史銷售與營業額 (支援訂單刪除與密碼確認)")
         project_orders = [o for o in st.session_state.orders if o["project_id"] == current_project_id]
+        
         if project_orders:
+            for o in project_orders:
+                items_str = ", ".join([f"{i['name']}x{i['qty']}" for i in o['items']])
+                
+                c_info, c_btn = st.columns([4, 1])
+                with c_info:
+                    st.markdown(f"**訂單編號**: `{o['id']}` | **時間**: {o['time']} | **明細**: {items_str} | **總金額**: **NT$ {o['total']:,}**")
+                with c_btn:
+                    if st.button("🗑️ 刪除訂單", key=f"del_ord_btn_{o['id']}"):
+                        st.session_state.delete_order_target = o['id']
+                        st.rerun()
+                
+                # 訂單刪除第二層確認框
+                if st.session_state.delete_order_target == o['id']:
+                    with st.container():
+                        st.warning(f"⚠️ 您正在嘗試刪除訂單 **【{o['id']}】**（金額 NT$ {o['total']:,}）。刪除後該筆訂單所扣除的庫存將會自動加回！")
+                        with st.form(f"delete_order_form_{o['id']}"):
+                            ord_pwd = st.text_input("請輸入管理員密碼確認刪除 (8888)", type="password", key=f"opwd_{o['id']}")
+                            oc1, oc2 = st.columns(2)
+                            with oc1:
+                                confirm_del_ord = st.form_submit_button("🚨 確認刪除訂單", type="primary")
+                                if confirm_del_ord:
+                                    if ord_pwd == "8888":
+                                        # 將該訂單品項的庫存加回
+                                        for item in o['items']:
+                                            for f in st.session_state.flavors:
+                                                if f['name'] == item['name'] and f['project_id'] == o['project_id']:
+                                                    f['stock'] += item['qty']
+                                        
+                                        st.session_state.orders = [item for item in st.session_state.orders if item["id"] != o["id"]]
+                                        st.session_state.delete_order_target = None
+                                        persist_state()
+                                        st.session_state.toast_message = f"🗑️ 已成功刪除訂單 {o['id']} 並自動同步恢復庫存！"
+                                        st.rerun()
+                                    else:
+                                        st.error("❌ 密碼錯誤！刪除失敗。")
+                            with oc2:
+                                cancel_del_ord = st.form_submit_button("❌ 取消")
+                                if cancel_del_ord:
+                                    st.session_state.delete_order_target = None
+                                    st.rerun()
+                st.markdown("---")
+            
+            # 每日營業額趨勢圖
             order_summary = []
             for o in project_orders:
                 items_str = ", ".join([f"{i['name']}x{i['qty']}" for i in o['items']])
                 order_summary.append({
-                    "訂單編號": o["id"],
                     "銷售時間": o["time"],
-                    "購買明細": items_str,
                     "總金額 (NT$)": o["total"]
                 })
             df_orders = pd.DataFrame(order_summary)
-            st.dataframe(df_orders, use_container_width=True)
-            
             df_orders["日期"] = pd.to_datetime(df_orders["銷售時間"]).dt.date
             daily_rev = df_orders.groupby("日期")["總金額 (NT$)"].sum().reset_index()
             st.markdown("### 📅 每日營業額趨勢")
@@ -464,7 +509,7 @@ elif mode == "⚙️ 專案與口味設定":
             st.info("目前尚無任何專案。")
                     
     with tab_f:
-        st.subheader("➕ 新增口味")
+        st.subheader("➕ 新增口味 (需輸入密碼 8888)")
         all_proj_options = {p["name"]: p["id"] for p in st.session_state.projects}
         
         if all_proj_options:
@@ -476,24 +521,30 @@ elif mode == "⚙️ 專案與口味設定":
                 flavor_price = st.number_input("單價 (NT$)", min_value=0, value=280, step=10)
                 initial_stock = st.number_input("初始庫存數量 (盒)", min_value=0, value=50, step=5)
                 flavor_color = st.color_picker("按鈕與圖表顯示顏色", "#8D6E63")
+                new_fav_pwd = st.text_input("管理員確認密碼", type="password", placeholder="請輸入 8888")
                 
                 add_flavor_btn = st.form_submit_button("確認新增口味")
-                if add_flavor_btn and flavor_name:
-                    new_fav_id = f"fav_{len(st.session_state.flavors)+1}"
-                    st.session_state.flavors.append({
-                        "id": new_fav_id,
-                        "project_id": target_proj_id,
-                        "name": flavor_name,
-                        "price": flavor_price,
-                        "stock": initial_stock,
-                        "color": flavor_color
-                    })
-                    persist_state()
-                    st.session_state.toast_message = f"✅ 成功為【{target_proj_name}】新增口味：{flavor_name}！"
-                    st.rerun()
+                if add_flavor_btn:
+                    if not flavor_name:
+                        st.error("❌ 請輸入口味名稱！")
+                    elif new_fav_pwd != "8888":
+                        st.error("❌ 密碼錯誤！新增口味需輸入正確密碼 (8888)。")
+                    else:
+                        new_fav_id = f"fav_{len(st.session_state.flavors)+1}"
+                        st.session_state.flavors.append({
+                            "id": new_fav_id,
+                            "project_id": target_proj_id,
+                            "name": flavor_name,
+                            "price": flavor_price,
+                            "stock": initial_stock,
+                            "color": flavor_color
+                        })
+                        persist_state()
+                        st.session_state.toast_message = f"✅ 成功為【{target_proj_name}】新增口味：{flavor_name}！"
+                        st.rerun()
                     
             st.markdown("---")
-            st.subheader("✏️ 現有口味清單 (支援編輯與刪除)")
+            st.subheader("✏️ 現有口味清單 (支援編輯與第二層密碼刪除)")
             
             if st.session_state.flavors:
                 for idx, f in enumerate(list(st.session_state.flavors)):
@@ -516,14 +567,36 @@ elif mode == "⚙️ 專案與口味設定":
                                     st.session_state.toast_message = f"✅ 成功更新【{edit_name}】資訊！"
                                     st.rerun()
                             with c_del:
-                                delete_btn = st.form_submit_button("🗑️ 刪除此口味")
-                                if delete_btn:
-                                    st.session_state.flavors = [item for item in st.session_state.flavors if item["id"] != f["id"]]
-                                    if f['id'] in st.session_state.pos_cart:
-                                        del st.session_state.pos_cart[f['id']]
-                                    persist_state()
-                                    st.session_state.toast_message = f"🗑️ 已刪除口味：{f['name']}"
+                                trigger_del_fav = st.form_submit_button("🗑️ 刪除此口味")
+                                if trigger_del_fav:
+                                    st.session_state.delete_flavor_target = f['id']
                                     st.rerun()
+                        
+                        # 口味刪除第二層密碼確認框
+                        if st.session_state.delete_flavor_target == f['id']:
+                            with st.container():
+                                st.warning(f"⚠️ 您正在嘗試刪除口味 **【{f['name']}】**。此操作將一併移除該口味設定與購物車快取！")
+                                with st.form(f"delete_flavor_verify_form_{f['id']}"):
+                                    fav_del_pwd = st.text_input("請輸入管理員密碼確認刪除 (8888)", type="password", key=f"fpwd_{f['id']}")
+                                    fc1, fc2 = st.columns(2)
+                                    with fc1:
+                                        confirm_del_fav = st.form_submit_button("🚨 確認永久刪除", type="primary")
+                                        if confirm_del_fav:
+                                            if fav_del_pwd == "8888":
+                                                st.session_state.flavors = [item for item in st.session_state.flavors if item["id"] != f["id"]]
+                                                if f['id'] in st.session_state.pos_cart:
+                                                    del st.session_state.pos_cart[f['id']]
+                                                st.session_state.delete_flavor_target = None
+                                                persist_state()
+                                                st.session_state.toast_message = f"🗑️ 已成功刪除口味：{f['name']}"
+                                                st.rerun()
+                                            else:
+                                                st.error("❌ 密碼錯誤！刪除失敗。")
+                                    with fc2:
+                                        cancel_del_fav = st.form_submit_button("❌ 取消")
+                                        if cancel_del_fav:
+                                            st.session_state.delete_flavor_target = None
+                                            st.rerun()
             else:
                 st.info("目前尚無任何口味資料。")
         else:
