@@ -122,8 +122,9 @@ if mode == "🛒 前台 POS 點餐結帳":
     col_main, col_cart = st.columns([2, 1])
     
     with col_main:
-        st.subheader("📦 點餐區 (點擊專屬色彩大按鈕直接加進購物車 +1)")
+        st.subheader("📦 點餐區 (一排 2 個按鈕，點擊直接加進購物車 +1)")
         
+        # 強制每行 2 個按鈕配置
         cols = st.columns(2)
         for idx, f in enumerate(project_flavors):
             col_target = cols[idx % 2]
@@ -132,14 +133,14 @@ if mode == "🛒 前台 POS 點餐結帳":
                 stock_status = f"剩餘庫存: {f['stock']} 盒" if f['stock'] > 0 else "❌ 已售完"
                 
                 card_html = f"""
-                    <div style="background-color: {btn_color}; color: white; padding: 22px; border-radius: 14px 14px 0 0; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-                        <div style="font-size: 22px; font-weight: bold; margin-bottom: 5px;">{f['name']}</div>
-                        <div style="font-size: 16px; opacity: 0.95;">NT$ {f['price']} | {stock_status}</div>
+                    <div style="background-color: {btn_color}; color: white; padding: 18px; border-radius: 12px 12px 0 0; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                        <div style="font-size: 20px; font-weight: bold; margin-bottom: 4px;">{f['name']}</div>
+                        <div style="font-size: 15px; opacity: 0.95;">NT$ {f['price']} | {stock_status}</div>
                     </div>
                 """
                 st.markdown(card_html, unsafe_allow_html=True)
                 
-                if st.button(f"➕ 點選加入 【{f['name']}】", key=f"pos_click_{f['id']}_{idx}", use_container_width=True):
+                if st.button(f"➕ 加入 【{f['name']}】", key=f"pos_click_{f['id']}_{idx}", use_container_width=True):
                     if f['stock'] > 0:
                         current_qty = st.session_state.pos_cart.get(f['id'], {}).get('qty', 0)
                         if current_qty < f['stock']:
@@ -155,7 +156,7 @@ if mode == "🛒 前台 POS 點餐結帳":
                             st.toast(f"⚠️ {f['name']} 庫存不足，無法再加!", icon="⚠️")
                     else:
                         st.toast(f"❌ {f['name']} 已售完!", icon="❌")
-                st.markdown("<div style='margin-bottom: 15px;'></div>", unsafe_allow_html=True)
+                st.markdown("<div style='margin-bottom: 12px;'></div>", unsafe_allow_html=True)
 
     with col_cart:
         st.subheader("🛒 目前購物車")
@@ -286,8 +287,25 @@ elif mode == "📊 後台庫存與營收管理":
     project_flavors = [f for f in st.session_state.flavors if f["project_id"] == current_project_id]
     
     with tab1:
-        st.subheader("📦 庫存即時調整 (支援單獨加減數量)")
+        # 批量補貨移到上方
+        st.subheader("📥 批次補貨登錄")
+        with st.form("restock_form"):
+            flavor_options = {f["name"]: f["id"] for f in project_flavors}
+            selected_flavor_name = st.selectbox("選擇口味進行批次補貨", list(flavor_options.keys()) if flavor_options else [])
+            restock_qty = st.number_input("補貨數量 (盒)", min_value=1, value=20, step=1)
+            
+            submit_restock = st.form_submit_button("確認批次補貨")
+            if submit_restock and flavor_options:
+                fid = flavor_options[selected_flavor_name]
+                for item in st.session_state.flavors:
+                    if item["id"] == fid:
+                        item["stock"] += restock_qty
+                persist_state()
+                st.session_state.toast_message = f"✅ 成功為【{selected_flavor_name}】補貨 {restock_qty} 盒！"
+                st.rerun()
+                
         st.markdown("---")
+        st.subheader("📦 庫存即時調整 (支援單獨加減數量)")
         
         if project_flavors:
             for idx, f in enumerate(project_flavors):
@@ -316,22 +334,6 @@ elif mode == "📊 後台庫存與營收管理":
                 st.markdown("---")
         else:
             st.info("尚無口味資料。")
-            
-        st.subheader("📥 批次補貨登錄")
-        with st.form("restock_form"):
-            flavor_options = {f["name"]: f["id"] for f in project_flavors}
-            selected_flavor_name = st.selectbox("選擇口味進行批次補貨", list(flavor_options.keys()) if flavor_options else [])
-            restock_qty = st.number_input("補貨數量 (盒)", min_value=1, value=20, step=1)
-            
-            submit_restock = st.form_submit_button("確認批次補貨")
-            if submit_restock and flavor_options:
-                fid = flavor_options[selected_flavor_name]
-                for item in st.session_state.flavors:
-                    if item["id"] == fid:
-                        item["stock"] += restock_qty
-                persist_state()
-                st.session_state.toast_message = f"✅ 成功為【{selected_flavor_name}】補貨 {restock_qty} 盒！"
-                st.rerun()
             
     with tab2:
         st.subheader("📉 各口味橫向庫存量與見底警示")
@@ -433,7 +435,6 @@ elif mode == "⚙️ 專案與口味設定":
                         st.session_state.delete_proj_target = p['id']
                         st.rerun()
                 
-                # 如果點擊了刪除，展開第二層密碼確認框
                 if st.session_state.delete_proj_target == p['id']:
                     with st.container():
                         st.warning(f"⚠️ 您正在嘗試刪除專案 **【{p['name']}】**。此操作將一併刪除該專案所有口味與歷史訂單且無法復原！")
@@ -501,7 +502,7 @@ elif mode == "⚙️ 專案與口味設定":
                     with st.expander(f"📦 [{proj_name}] {f['name']} (售價: NT${f['price']} | 庫存: {f['stock']}盒)"):
                         with st.form(f"edit_flavor_form_{f['id']}_{idx}"):
                             edit_name = st.text_input("修改口味名稱", value=f['name'], key=f"ename_{f['id']}_{idx}")
-                            edit_price = st.number_input("修改單價 (NT$)", min_value=0, value=f['price'], step=10, key=f"eprice_{f['id']}_{idx}")
+                            edit_price = st.number_input("修改單價 (NT$)", min_value=1, value=f['price'], step=10, key=f"eprice_{f['id']}_{idx}")
                             edit_color = st.color_picker("修改按鈕顏色", value=f.get('color', '#8D6E63'), key=f"ecolor_{f['id']}_{idx}")
                             
                             c_save, c_del = st.columns(2)
