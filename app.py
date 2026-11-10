@@ -430,82 +430,9 @@ elif mode == "📊 後台庫存與營收管理":
 elif mode == "⚙️ 專案與口味設定":
     st.title("⚙️ 快閃櫃專案與口味設定")
     
-    tab_p, tab_f = st.tabs(["📁 快閃櫃專案管理", "🏷️ 口味與定價管理 (新增/編輯/刪除)"])
+    # 將口味管理分頁放在專案管理分頁前面
+    tab_f, tab_p = st.tabs(["🏷️ 口味與定價管理 (新增/編輯/刪除)", "📁 快閃櫃專案管理"])
     
-    with tab_p:
-        st.subheader("新增快閃櫃專案 (需輸入密碼 8888)")
-        with st.form("new_project_form"):
-            new_proj_name = st.text_input("專案名稱 (例如：高雄漢神巨蛋快閃櫃)")
-            new_proj_pwd = st.text_input("管理員確認密碼", type="password", placeholder="請輸入 8888")
-            create_proj_btn = st.form_submit_button("建立新專案")
-            
-            if create_proj_btn:
-                if not new_proj_name:
-                    st.error("❌ 請輸入專案名稱！")
-                elif new_proj_pwd != "8888":
-                    st.error("❌ 密碼錯誤！新增專案需輸入正確密碼 (8888)。")
-                else:
-                    new_id = f"proj_{len(st.session_state.projects)+1}"
-                    st.session_state.projects.append({"id": new_id, "name": new_proj_name, "status": "進行中"})
-                    persist_state()
-                    st.session_state.toast_message = f"✅ 成功建立專案：{new_proj_name}"
-                    st.rerun()
-                
-        st.markdown("---")
-        st.subheader("現有專案管理與狀態切換")
-        
-        if st.session_state.projects:
-            for p in list(st.session_state.projects):
-                col1, col2, col3, col4 = st.columns([3, 2, 2, 2])
-                with col1:
-                    st.markdown(f"**{p['name']}**")
-                with col2:
-                    st.markdown(f"狀態: `{p['status']}`")
-                with col3:
-                    new_status = st.selectbox(
-                        "變更狀態", 
-                        ["進行中", "已完成"], 
-                        index=0 if p["status"]=="進行中" else 1,
-                        key=f"status_{p['id']}",
-                        label_visibility="collapsed"
-                    )
-                    if new_status != p["status"]:
-                        p["status"] = new_status
-                        persist_state()
-                        st.rerun()
-                with col4:
-                    if st.button("🗑️ 刪除專案", key=f"del_proj_btn_{p['id']}"):
-                        st.session_state.delete_proj_target = p['id']
-                        st.rerun()
-                
-                if st.session_state.delete_proj_target == p['id']:
-                    with st.container():
-                        st.warning(f"⚠️ 您正在嘗試刪除專案 **【{p['name']}】**。此操作將一併刪除該專案所有口味與歷史訂單且無法復原！")
-                        with st.form(f"delete_verify_form_{p['id']}"):
-                            del_pwd = st.text_input("請輸入管理員密碼確認刪除 (8888)", type="password", key=f"dpwd_{p['id']}")
-                            c_confirm, c_cancel = st.columns(2)
-                            with c_confirm:
-                                sub_del = st.form_submit_button("🚨 確認永久刪除", type="primary")
-                                if sub_del:
-                                    if del_pwd == "8888":
-                                        st.session_state.projects = [item for item in st.session_state.projects if item["id"] != p["id"]]
-                                        st.session_state.flavors = [item for item in st.session_state.flavors if item["project_id"] != p["id"]]
-                                        st.session_state.orders = [item for item in st.session_state.orders if item["project_id"] != p["id"]]
-                                        st.session_state.delete_proj_target = None
-                                        persist_state()
-                                        st.session_state.toast_message = f"🗑️ 已成功永久刪除專案：{p['name']}"
-                                        st.rerun()
-                                    else:
-                                        st.error("❌ 密碼錯誤！刪除失敗。")
-                            with c_cancel:
-                                cancel_del = st.form_submit_button("❌ 取消")
-                                if cancel_del:
-                                    st.session_state.delete_proj_target = None
-                                    st.rerun()
-                st.markdown("---")
-        else:
-            st.info("目前尚無任何專案。")
-                    
     with tab_f:
         st.subheader("➕ 新增口味 (需輸入密碼 8888)")
         all_proj_options = {p["name"]: p["id"] for p in st.session_state.projects}
@@ -598,4 +525,78 @@ elif mode == "⚙️ 專案與口味設定":
             else:
                 st.info("目前尚無任何口味資料。")
         else:
-            st.info("請先至左側建立專案。")
+            st.info("請先至右側建立專案。")
+
+    with tab_p:
+        st.subheader("新增快閃櫃專案 (需輸入密碼 8888)")
+        with st.form("new_project_form"):
+            new_proj_name = st.text_input("專案名稱 (例如：高雄漢神巨蛋快閃櫃)")
+            new_proj_pwd = st.text_input("管理員確認密碼", type="password", placeholder="請輸入 8888")
+            create_proj_btn = st.form_submit_button("建立新專案")
+            
+            if create_proj_btn:
+                if not new_proj_name:
+                    st.error("❌ 請輸入專案名稱！")
+                elif new_proj_pwd != "8888":
+                    st.error("❌ 密碼錯誤！新增專案需輸入正確密碼 (8888)。")
+                else:
+                    new_id = f"proj_{len(st.session_state.projects)+1}"
+                    st.session_state.projects.append({"id": new_id, "name": new_proj_name, "status": "進行中"})
+                    persist_state()
+                    st.session_state.toast_message = f"✅ 成功建立專案：{new_proj_name}"
+                    st.rerun()
+                
+        st.markdown("---")
+        st.subheader("現有專案管理與狀態切換")
+        
+        if st.session_state.projects:
+            for p in list(st.session_state.projects):
+                col1, col2, col3, col4 = st.columns([3, 2, 2, 2])
+                with col1:
+                    st.markdown(f"**{p['name']}**")
+                with col2:
+                    st.markdown(f"狀態: `{p['status']}`")
+                with col3:
+                    new_status = st.selectbox(
+                        "變更狀態", 
+                        ["進行中", "已完成"], 
+                        index=0 if p["status"]=="進行中" else 1,
+                        key=f"status_{p['id']}",
+                        label_visibility="collapsed"
+                    )
+                    if new_status != p["status"]:
+                        p["status"] = new_status
+                        persist_state()
+                        st.rerun()
+                with col4:
+                    if st.button("🗑️ 刪除專案", key=f"del_proj_btn_{p['id']}"):
+                        st.session_state.delete_proj_target = p['id']
+                        st.rerun()
+                
+                if st.session_state.delete_proj_target == p['id']:
+                    with st.container():
+                        st.warning(f"⚠️ 您正在嘗試刪除專案 **【{p['name']}】**。此操作將一併刪除該專案所有口味與歷史訂單且無法復原！")
+                        with st.form(f"delete_verify_form_{p['id']}"):
+                            del_pwd = st.text_input("請輸入管理員密碼確認刪除 (8888)", type="password", key=f"dpwd_{p['id']}")
+                            c_confirm, c_cancel = st.columns(2)
+                            with c_confirm:
+                                sub_del = st.form_submit_button("🚨 確認永久刪除", type="primary")
+                                if sub_del:
+                                    if del_pwd == "8888":
+                                        st.session_state.projects = [item for item in st.session_state.projects if item["id"] != p["id"]]
+                                        st.session_state.flavors = [item for item in st.session_state.flavors if item["project_id"] != p["id"]]
+                                        st.session_state.orders = [item for item in st.session_state.orders if item["project_id"] != p["id"]]
+                                        st.session_state.delete_proj_target = None
+                                        persist_state()
+                                        st.session_state.toast_message = f"🗑️ 已成功永久刪除專案：{p['name']}"
+                                        st.rerun()
+                                    else:
+                                        st.error("❌ 密碼錯誤！刪除失敗。")
+                            with c_cancel:
+                                cancel_del = st.form_submit_button("❌ 取消")
+                                if cancel_del:
+                                    st.session_state.delete_proj_target = None
+                                    st.rerun()
+                st.markdown("---")
+        else:
+            st.info("目前尚無任何專案。")
