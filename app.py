@@ -159,7 +159,7 @@ if mode == "🛒 前台 POS 點餐結帳":
                 st.markdown("<div style='margin-bottom: 12px;'></div>", unsafe_allow_html=True)
 
     with col_cart:
-        st.subheader("🛒 目前購物車")
+        st.subheader("🛒 目前訂單")
         
         if st.session_state.pos_cart:
             total_amount = 0
