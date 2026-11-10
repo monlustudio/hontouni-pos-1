@@ -1,0 +1,134 @@
+{
+    "projects": [
+        {
+            "id": "proj_3",
+            "name": "屏東太平洋",
+            "status": "進行中"
+        }
+    ],
+    "flavors": [
+        {
+            "id": "fav_6",
+            "project_id": "proj_3",
+            "name": "秋季奶酥三重奏",
+            "price": 420,
+            "stock": 30,
+            "color": "#ef9270"
+        },
+        {
+            "id": "fav_7",
+            "project_id": "proj_3",
+            "name": "柿柿如金 雙韻大福",
+            "price": 420,
+            "stock": 29,
+            "color": "#f38841"
+        },
+        {
+            "id": "fav_8",
+            "project_id": "proj_3",
+            "name": "經典奶酥雙韻大福",
+            "price": 360,
+            "stock": 30,
+            "color": "#ffd2cf"
+        },
+        {
+            "id": "fav_9",
+            "project_id": "proj_3",
+            "name": "冰心鹹奶油雙拼",
+            "price": 330,
+            "stock": 30,
+            "color": "#8a3e39"
+        },
+        {
+            "id": "fav_10",
+            "project_id": "proj_3",
+            "name": "綜合豆大福",
+            "price": 210,
+            "stock": 30,
+            "color": "#cecc99"
+        },
+        {
+            "id": "fav_11",
+            "project_id": "proj_3",
+            "name": "草莓綜合",
+            "price": 280,
+            "stock": 50,
+            "color": "#d02756"
+        },
+        {
+            "id": "fav_7",
+            "project_id": "proj_3",
+            "name": "草莓成熟時",
+            "price": 120,
+            "stock": 9,
+            "color": "#e21439"
+        }
+    ],
+    "orders": [
+        {
+            "id": "ord_5",
+            "project_id": "proj_3",
+            "items": [
+                {
+                    "name": "秋季奶酥三重奏",
+                    "price": 420,
+                    "qty": 1
+                }
+            ],
+            "total": 420,
+            "time": "2026-11-10 19:20:40"
+        },
+        {
+            "id": "ord_6",
+            "project_id": "proj_3",
+            "items": [
+                {
+                    "name": "秋季奶酥三重奏",
+                    "price": 420,
+                    "qty": 1
+                }
+            ],
+            "total": 420,
+            "time": "2026-11-10 19:22:19"
+        },
+        {
+            "id": "ord_7",
+            "project_id": "proj_3",
+            "items": [
+                {
+                    "name": "秋季奶酥三重奏",
+                    "price": 420,
+                    "qty": 10
+                }
+            ],
+            "total": 4200,
+            "time": "2026-11-10 19:24:41"
+        },
+        {
+            "id": "ord_4",
+            "project_id": "proj_3",
+            "items": [
+                {
+                    "name": "秋季奶酥三重奏",
+                    "price": 420,
+                    "qty": 1
+                }
+            ],
+            "total": 420,
+            "time": "2026-11-10 19:33:45"
+        },
+        {
+            "id": "ord_5",
+            "project_id": "proj_3",
+            "items": [
+                {
+                    "name": "柿柿如金 雙韻大福",
+                    "price": 420,
+                    "qty": 1
+                }
+            ],
+            "total": 420,
+            "time": "2026-11-10 19:37:29"
+        }
+    ]
+}
