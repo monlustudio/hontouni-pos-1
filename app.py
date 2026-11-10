@@ -122,7 +122,7 @@ if mode == "🛒 前台 POS 點餐結帳":
     col_main, col_cart = st.columns([2, 1])
     
     with col_main:
-        st.subheader("📦 點餐區 (一排 2 個按鈕，點擊直接加進購物車 +1)")
+        st.subheader("📦 點餐區 (點擊+直接加入訂單)")
         
         # 強制每行 2 個按鈕配置
         cols = st.columns(2)
