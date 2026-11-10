@@ -390,7 +390,6 @@ elif mode == "📊 後台庫存與營收管理":
                                 confirm_del_ord = st.form_submit_button("🚨 確認刪除訂單", type="primary")
                                 if confirm_del_ord:
                                     if ord_pwd == "8888":
-                                        # 將該訂單品項的庫存加回
                                         for item in o['items']:
                                             for f in st.session_state.flavors:
                                                 if f['name'] == item['name'] and f['project_id'] == o['project_id']:
@@ -410,7 +409,6 @@ elif mode == "📊 後台庫存與營收管理":
                                     st.rerun()
                 st.markdown("---")
             
-            # 每日營業額趨勢圖
             order_summary = []
             for o in project_orders:
                 items_str = ", ".join([f"{i['name']}x{i['qty']}" for i in o['items']])
@@ -576,8 +574,8 @@ elif mode == "⚙️ 專案與口味設定":
                         if st.session_state.delete_flavor_target == f['id']:
                             with st.container():
                                 st.warning(f"⚠️ 您正在嘗試刪除口味 **【{f['name']}】**。此操作將一併移除該口味設定與購物車快取！")
-                                with st.form(f"delete_flavor_verify_form_{f['id']}"):
-                                    fav_del_pwd = st.text_input("請輸入管理員密碼確認刪除 (8888)", type="password", key=f"fpwd_{f['id']}")
+                                with st.form(f"delete_flavor_verify_form_{f['id']}_{idx}"):
+                                    fav_del_pwd = st.text_input("請輸入管理員密碼確認刪除 (8888)", type="password", key=f"fpwd_{f['id']}_{idx}")
                                     fc1, fc2 = st.columns(2)
                                     with fc1:
                                         confirm_del_fav = st.form_submit_button("🚨 確認永久刪除", type="primary")
